@@ -21,6 +21,7 @@ def get_question():
         questions = NSFW_QUESTIONS
     else:
         questions = SFW_QUESTIONS
+        mode = "sfw"
 
     if not questions:
         return jsonify({
@@ -30,7 +31,6 @@ def get_question():
 
     q = random.choice(questions)
 
-    # Return ONLY what bot needs
     return jsonify({
         "success": True,
         "id": q["id"],
@@ -39,4 +39,16 @@ def get_question():
         "votesA": q.get("votesA", 0),
         "votesB": q.get("votesB", 0),
         "mode": mode
+    })
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({
+        "status": "ok",
+        "api": "Would You Rather API",
+        "version": "1.0",
+        "sfw_count": len(SFW_QUESTIONS),
+        "nsfw_count": len(NSFW_QUESTIONS),
+        "total_questions": len(SFW_QUESTIONS) + len(NSFW_QUESTIONS)
     })
