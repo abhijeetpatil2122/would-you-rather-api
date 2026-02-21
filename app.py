@@ -4,7 +4,10 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# ─────────────────────────────
 # Load questions ONCE (important for performance)
+# ─────────────────────────────
+
 with open("data/sfw.json", "r", encoding="utf-8") as f:
     SFW_QUESTIONS = json.load(f)
 
@@ -12,16 +15,25 @@ with open("data/nsfw.json", "r", encoding="utf-8") as f:
     NSFW_QUESTIONS = json.load(f)
 
 
-@app.route("/", methods=["GET"])
-def get_question():
-    # mode can be: sfw | nsfw
-    mode = request.args.get("mode", "sfw").lower()
+# ─────────────────────────────
+# Helper: Select DB by mode
+# ─────────────────────────────
 
+def get_questions_by_mode(mode):
     if mode == "nsfw":
-        questions = NSFW_QUESTIONS
-    else:
-        questions = SFW_QUESTIONS
-        mode = "sfw"
+        return NSFW_QUESTIONS, "nsfw"
+    return SFW_QUESTIONS, "sfw"
+
+
+# ─────────────────────────────
+# 1️⃣ Random Question Endpoint
+# GET /?mode=sfw | nsfw
+# ─────────────────────────────
+
+@app.route("/", methods=["GET"])
+def get_random_question():
+    mode = request.args.get("mode", "sfw").lower()
+    questions, mode = get_questions_by_mode(mode)
 
     if not questions:
         return jsonify({
@@ -42,13 +54,72 @@ def get_question():
     })
 
 
+# ─────────────────────────────
+# 2️⃣ Get Question By ID
+# GET /question?id=123&mode=sfw
+# ─────────────────────────────
+
+@app.route("/question", methods=["GET"])
+def get_question_by_id():
+    qid = request.args.get("id")
+    mode = request.args.get("mode", "sfw").lower()
+
+    if not qid:
+        return jsonify({
+            "success": False,
+            "error": "Missing question id"
+        }), 400
+
+    try:
+        qid = int(qid)
+    except ValueError:
+        return jsonify({
+            "success": False,
+            "error": "Invalid question id"
+        }), 400
+
+    questions, mode = get_questions_by_mode(mode)
+
+    question = next((q for q in questions if q["id"] == qid), None)
+
+    if not question:
+        return jsonify({
+            "success": False,
+            "error": "Question not found"
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "id": question["id"],
+        "a": question["a"],
+        "b": question["b"],
+        "votesA": question.get("votesA", 0),
+        "votesB": question.get("votesB", 0),
+        "mode": mode
+    })
+
+
+# ─────────────────────────────
+# 3️⃣ Health / Stats Endpoint
+# GET /health
+# ─────────────────────────────
+
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
+        "success": True,
         "status": "ok",
         "api": "Would You Rather API",
-        "version": "1.0",
+        "version": "1.1",
         "sfw_count": len(SFW_QUESTIONS),
         "nsfw_count": len(NSFW_QUESTIONS),
         "total_questions": len(SFW_QUESTIONS) + len(NSFW_QUESTIONS)
     })
+
+
+# ─────────────────────────────
+# Run (for local testing)
+# ─────────────────────────────
+
+if __name__ == "__main__":
+    app.run(debug=True)
