@@ -100,7 +100,46 @@ def get_question_by_id():
 
 
 # ─────────────────────────────
-# 3️⃣ Health / Stats Endpoint
+# 3️⃣ Both Modes Random Endpoint
+# GET /both
+# Returns 1 random SFW + 1 random NSFW
+# ─────────────────────────────
+
+@app.route("/both", methods=["GET"])
+def get_both_random():
+
+    if not SFW_QUESTIONS or not NSFW_QUESTIONS:
+        return jsonify({
+            "success": False,
+            "error": "Questions not available"
+        }), 500
+
+    sfw_q = random.choice(SFW_QUESTIONS)
+    nsfw_q = random.choice(NSFW_QUESTIONS)
+
+    return jsonify({
+        "success": True,
+        "sfw": {
+            "id": sfw_q["id"],
+            "a": sfw_q["a"],
+            "b": sfw_q["b"],
+            "votesA": sfw_q.get("votesA", 0),
+            "votesB": sfw_q.get("votesB", 0),
+            "mode": "sfw"
+        },
+        "nsfw": {
+            "id": nsfw_q["id"],
+            "a": nsfw_q["a"],
+            "b": nsfw_q["b"],
+            "votesA": nsfw_q.get("votesA", 0),
+            "votesB": nsfw_q.get("votesB", 0),
+            "mode": "nsfw"
+        }
+    })
+
+
+# ─────────────────────────────
+# 4️⃣ Health / Stats Endpoint
 # GET /health
 # ─────────────────────────────
 
@@ -110,7 +149,7 @@ def health():
         "success": True,
         "status": "ok",
         "api": "Would You Rather API",
-        "version": "1.1",
+        "version": "1.2",
         "sfw_count": len(SFW_QUESTIONS),
         "nsfw_count": len(NSFW_QUESTIONS),
         "total_questions": len(SFW_QUESTIONS) + len(NSFW_QUESTIONS)
