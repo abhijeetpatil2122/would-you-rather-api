@@ -5,6 +5,23 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # ─────────────────────────────
+# CORS Headers - Add this BEFORE any routes
+# ─────────────────────────────
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Accept'
+    return response
+
+# Handle OPTIONS preflight requests for all routes
+@app.route('/', defaults={'path': ''}, methods=['OPTIONS'])
+@app.route('/<path:path>', methods=['OPTIONS'])
+def handle_options(path):
+    return '', 200
+
+# ─────────────────────────────
 # Load questions ONCE (important for performance)
 # ─────────────────────────────
 
